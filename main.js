@@ -1,167 +1,181 @@
-function DrumMachine() {
-  const { useState, useEffect } = React
+function ClockScreen() {
+  const { useState, useEffect } = React;
 
-  const [power, setPower] = useState(true)
-  const [volume, setVolume] = useState(0.5)
-  const [display, setDisplay] = useState('')
+  const [countActive, setCountActive] = useState(false);
+  const [timer, setTimer] = useState(0);
+  const [breakValue, setBreakValue] = useState(5);
+  const [sessionValue, setSessionValue] = useState(25);
+  const [currentAction, setCurrentAction] = useState("Session");
 
-  const playSound = (key) => {
-    if (!power) return;
-
-    const audioElement = document.getElementById(key);
-    audioElement.volume = volume;
-    audioElement.currentTime = 0;
-    audioElement.play();
-
-    //Add active class to pad
-    const element = document.getElementById(`drum-${key}`)
-    element.classList.add('pad-active')
-    setTimeout(() => element.classList.remove('pad-active'), 200)
-
-    //Put text into text field
-    const [text] = sounds.filter(sound => sound.key === key)
-    setDisplay(text.name)
+  function breakIncrement() {
+    if (breakValue >= 60) return;
+    setBreakValue(breakValue + 1);
+  }
+  function breakDecrement() {
+    if (breakValue <= 1) return;
+    setBreakValue(breakValue - 1);
+  }
+  function sessionIncrement() {
+    if (sessionValue >= 60) return;
+    setSessionValue(sessionValue + 1);
+  }
+  function sessionDecrement() {
+    if (sessionValue <= 1) return;
+    setSessionValue(sessionValue - 1);
   }
 
-  const handleKeyPress = (event) => {
-    const key = event.key.toUpperCase();
-    if (['Q', 'W', "E", "A", "S", "D", "Z", "X", "C"].includes(key)) {
-      playSound(key)
+  function handleReset() {
+    setCountActive(false);
+    setBreakValue(5);
+    setSessionValue(25);
+    setTimer(0);
+    setCurrentAction("Session");
+    const beep = document.getElementById("beep");
+    beep.pause();
+    beep.currentTime = 0;
+  }
+
+  function updateTime() {
+    if (currentAction == "Session") {
+      const totalSeconds = sessionValue * 60 - timer;
+
+      if (totalSeconds < 0) {
+        setTimer(0);
+        setCurrentAction("Break");
+      } else if (totalSeconds === 0) {
+        playBeep();
+      }
+      return formatTime(totalSeconds);
+    } else if (currentAction === "Break") {
+      const totalSeconds = breakValue * 60 - timer;
+
+      if (totalSeconds < 0) {
+        setTimer(0);
+        setCurrentAction("Session");
+      } else if (totalSeconds === 0) {
+        playBeep();
+      }
+      return formatTime(totalSeconds);
     }
   }
 
+  function formatTime(seconds) {
+    const minutes = Math.floor(seconds / 60);
+    const secondsLeft = seconds % 60;
+    return `${minutes < 10 ? "0" + minutes : minutes}:${
+      secondsLeft < 10 ? "0" + secondsLeft : secondsLeft
+    }`;
+  }
+
+  function playBeep() {
+    const beep = document.getElementById("beep");
+    beep.currentTime = 0;
+    beep.play();
+  }
+
   useEffect(() => {
-    document.addEventListener('keydown', handleKeyPress);
-    return () => {
-      document.removeEventListener('keydown', handleKeyPress);
-    };
-  }, [volume, power])
+    let interval;
+    if (countActive) {
+      interval = setInterval(() => {
+        setTimer((time) => time + 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [countActive]);
 
   return (
-    <div id="drum-machine" className="container vh-100">
-      <div className="row h-100 justify-content-center align-items-center">
-        <div id="display" className="col-8 p-0">
-          <div className="row h-100 p-0 m-0">
-            <div className="col-7 p-0 pad-container">
-              <div className="row pad-box">
-                <div className="drum-pad" id="drum-Q" onClick={() => playSound('Q')}>
-                  <audio src="https://cdn.freecodecamp.org/testable-projects-fcc/audio/Heater-1.mp3" id="Q" className="clip"></audio>
-                  Q</div>
-                <div className="drum-pad" id="drum-W" onClick={() => playSound('W')}>
-                  <audio src="https://cdn.freecodecamp.org/testable-projects-fcc/audio/Heater-2.mp3" id="W" className="clip"></audio>
-                  W
-                </div>
-                <div className="drum-pad" id="drum-E" onClick={() => playSound('E')}>
-                  <audio src="https://cdn.freecodecamp.org/testable-projects-fcc/audio/Heater-3.mp3" id="E" className="clip"></audio>
-                  E</div>
+    <div className="row vh-100 justify-content-center m-0 align-items-center">
+      <div className="col-5 p-3 border border-dark border-2 rounded">
+        {/* Title */}
+        <div className="row m-0 mb-4">
+          <h1 className="text-center p-0 m-0 fw-bold">25 + 5 Clock</h1>
+        </div>
+        {/* Manage length */}
+        <div className="row m-0 mb-5">
+          {/* Break */}
+          <div className="col-6 p-0 px-5" id="break-label">
+            <div className="row m-0 my-2 justify-content-center fw-bold">
+              Break length
+            </div>
+            <div className="row m-0 text-center">
+              <div
+                className="col-4 p-0 btn btn-outline-dark d-flex justify-content-center align-items-center"
+                id="break-increment"
+                onClick={breakIncrement}>
+                <i className="fa-solid fa-arrow-up"></i>
               </div>
-              <div className="row pad-box" >
-                <div className="drum-pad" id="drum-A" onClick={() => playSound('A')}>
-                  <audio src="https://cdn.freecodecamp.org/testable-projects-fcc/audio/Heater-4_1.mp3"
-                    id="A" className="clip" ></audio>
-                  A</div>
-                <div className="drum-pad" id="drum-S" onClick={() => playSound('S')}>
-                  <audio src="https://cdn.freecodecamp.org/testable-projects-fcc/audio/Heater-6.mp3" id="S" className="clip"></audio>
-                  S</div>
-                <div className="drum-pad" id="drum-D" onClick={() => playSound('D')}>
-                  <audio src="https://cdn.freecodecamp.org/testable-projects-fcc/audio/Dsc_Oh.mp3" id="D" className="clip"></audio>
-                  D</div>
+              <div className="col-4 p-0" id="break-length">
+                <span class="badge text-bg-dark fs-5">{breakValue}</span>
               </div>
-              <div className="row pad-box" >
-                <div className="drum-pad" id="drum-Z" onClick={() => playSound('Z')}>
-                  <audio src="https://cdn.freecodecamp.org/testable-projects-fcc/audio/Kick_n_Hat.mp3" id="Z" className="clip"></audio>
-                  Z</div>
-                <div className="drum-pad" id="drum-X" onClick={() => playSound('X')}>
-                  <audio src="https://cdn.freecodecamp.org/testable-projects-fcc/audio/RP4_KICK_1.mp3" id="X" className="clip"></audio>
-                  X</div>
-                <div className="drum-pad" id="drum-C" onClick={() => playSound('C')}>
-                  <audio src="https://cdn.freecodecamp.org/testable-projects-fcc/audio/Cev_H2.mp3" id="C" className="clip"></audio>
-                  C</div>
+              <div
+                className="col-4 p-0 btn btn-outline-dark d-flex justify-content-center align-items-center"
+                id="break-decrement"
+                onClick={breakDecrement}>
+                <i className="fa-solid fa-arrow-down"></i>
               </div>
             </div>
-            <div className="col-5 p-0">
-              <div className="row manage">
-                <div
-                  className="form-check form-switch d-flex justify-content-center">
-                  <label
-                    className="form-check-label me-5 fw-bold"
-                    htmlFor="powerSwitch">
-                    Power
-                  </label>
-                  <input
-                    className="form-check-input"
-                    type="checkbox"
-                    role="switch"
-                    id="powerSwitch"
-                    checked={power}
-                    onChange={() => {
-                      setPower(!power)
-                      setDisplay('')
-                    }}
-                  />
-                </div>
+          </div>
+          {/* Session */}
+          <div className="col-6 p-0 px-5" id="session-label">
+            <div className="row m-0 my-2 justify-content-center fw-bold">
+              Session length
+            </div>
+            <div className="row m-0 text-center">
+              <div
+                className="col-4 p-0 btn btn-outline-dark d-flex justify-content-center align-items-center"
+                id="session-increment"
+                onClick={sessionIncrement}>
+                <i className="fa-solid fa-arrow-up"></i>
               </div>
-              <div className="row manage">
-                <div className="text-field">{display}</div>
+              <div className="col-4 p-0" id="session-length">
+                <span class="badge text-bg-dark fs-5"> {sessionValue}</span>
               </div>
-              <div className="row manage">
-                <input
-                  type="range"
-                  className="form-range"
-                  min="0"
-                  max="1"
-                  step="0.05"
-                  id="volumeRange"
-                  value={volume}
-                  onChange={(e) => setVolume(e.target.value)}
-                />
+              <div
+                className="col-4 p-0 btn btn-outline-dark d-flex justify-content-center align-items-center"
+                id="session-decrement"
+                onClick={sessionDecrement}>
+                <i className="fa-solid fa-arrow-down"></i>
               </div>
             </div>
           </div>
         </div>
+        {/* Screen */}
+        <div className="row m-0 mb-2 justify-content-center">
+          <div className="col-6 p-0 border border-dark border-3 rounded text-center">
+            <h5 id="timer-label" className="fw-bold mt-2">
+              {currentAction}
+            </h5>
+            <h1 id="time-left" className="fw-bold">
+              {updateTime()}
+            </h1>
+          </div>
+        </div>
+        {/* Action buttons */}
+        <div class="btn-group" role="group">
+          <button
+            type="button"
+            class="play-pause-button btn btn-outline-dark"
+            onClick={() => setCountActive(!countActive)}
+            id="start_stop">
+            <i className="fa-solid fa-play"></i>/
+            <i className="fa-solid fa-pause"></i>
+          </button>
+
+          <button
+            type="button"
+            class="action-button btn btn-outline-dark"
+            onClick={handleReset}
+            id="reset">
+            <i className="fa-solid fa-arrows-rotate"></i>
+          </button>
+        </div>
+        {/* Audio beep */}
+        <audio
+          id="beep"
+          src="https://cdn.freecodecamp.org/testable-projects-fcc/audio/BeepSound.wav"></audio>
       </div>
     </div>
-  )
+  );
 }
 
-ReactDOM.render(<DrumMachine />, document.querySelector('#drum-wrapper'))
-
-
-const sounds = [
-  {
-    key: 'Q',
-    name: 'Heater 1'
-  },
-  {
-    key: 'W',
-    name: 'Heater 2'
-  },
-  {
-    key: 'E',
-    name: 'Heater 3'
-  },
-  {
-    key: 'A',
-    name: 'Heater 4'
-  },
-  {
-    key: 'S',
-    name: 'Clap'
-  },
-  {
-    key: 'D',
-    name: 'Open-HH'
-  },
-  {
-    key: 'Z',
-    name: "Kick-n'-Hat"
-  },
-  {
-    key: 'X',
-    name: 'Kick'
-  },
-  {
-    key: 'C',
-    name: 'Closed-HH'
-  }
-]
+ReactDOM.render(<ClockScreen />, document.querySelector("#clock-wrapper"));
